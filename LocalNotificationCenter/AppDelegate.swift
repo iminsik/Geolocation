@@ -8,16 +8,108 @@
 
 import UIKit
 import CoreData
+import MapKit
+import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
 
     var window: UIWindow?
-
+    var locationManager: CLLocationManager?
+    var notificationCenter : UNUserNotificationCenter?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        self.locationManager = CLLocationManager()
+        self.locationManager!.delegate = self
+        self.notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter?.delegate = self
+        self.locationManager?.delegate = self
+        // 2
+        self.locationManager?.requestAlwaysAuthorization()
+        
+        // define what do you need permission to use
+        let options: UNAuthorizationOptions = [.alert, .sound]
+        
+        // request permission
+        notificationCenter?.requestAuthorization(options: options) { (granted, error) in
+            if !granted {
+                print("Permission not granted")
+            }
+        }
         return true
+    }
+    
+    // called when user Exits a monitored region
+    func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        if region is CLCircularRegion {
+            // Do what you want if this information
+            self.handleEvent(forRegion: region)
+        }
+    }
+    
+    // called when user Enters a monitored region
+    func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        if region is CLCircularRegion {
+            // Do what you want if this information
+            self.handleEvent(forRegion: region)
+        }
+    }
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("error:: \(error.localizedDescription)")
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        if status == .authorizedWhenInUse {
+            locationManager?.requestLocation()
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if locations.first != nil {
+            print("location:: (location)")
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, requestLocation locations: [CLLocation]) {
+        print("current location",locations.count)
+    }
+    
+
+    
+    func handleEvent(forRegion region: CLRegion!) {
+        
+        // customize your notification content
+        let content = UNMutableNotificationContent()
+        content.title = "Awesome title"
+        content.body = "Well-crafted body message"
+        content.sound = UNNotificationSound.default
+        
+        // when the notification will be triggered
+        let timeInSeconds: TimeInterval = (60 * 15) // 60s * 15 = 15min
+        // the actual trigger object
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInSeconds,
+                                                        repeats: false)
+        
+        // notification unique identifier, for this example, same as the region to avoid duplicate notifications
+        let identifier = region.identifier
+        
+        // the notification request object
+        let request = UNNotificationRequest(identifier: identifier,
+                                            content: content,
+                                            trigger: trigger)
+        
+        
+        // trying to add the notification request to notification center
+        notificationCenter?.add(request, withCompletionHandler: { (error) in
+            if error != nil {
+                print("Error adding notification with identifier: \(identifier)")
+            }
+        })
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
+        
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -91,3 +183,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // when app is onpen and in foregroud
+        completionHandler(.alert)
+    }
+    
+}
