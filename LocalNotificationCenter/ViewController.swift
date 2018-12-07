@@ -34,7 +34,7 @@ class ViewController: UIViewController {
         geofenceRegion.notifyOnEntry = true
         geofenceRegion.notifyOnExit = true
         
-        
+        print(locationManager.location?.coordinate.latitude)
         self.locationManager.startMonitoring(for: geofenceRegion)
         print(self.locationManager.requestLocation())
     }

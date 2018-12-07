@@ -67,7 +67,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if locations.first != nil {
-            print("location:: (location)")
+            print("location:: \(locations.first?.coordinate.latitude.description)")
         }
     }
     
